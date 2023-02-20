@@ -1,0 +1,58 @@
+library(dplyr)
+df <- read.csv('C:/Users/Jerome/Desktop/personal projects/traffic accidents/raw ksi.csv')
+colnames(df)
+
+## Data Cleaning ##
+cleandf <- df[,c('ACCNUM', 'DATE', 'ROAD_CLASS', 'DISTRICT', 'TRAFFCTL', 'VISIBILITY', 'LIGHT', 'RDSFCOND', 'ACCLASS', 'NEIGHBOURHOOD_158', 'LATITUDE', 'LONGITUDE')]
+
+cleandf <- cleandf[!duplicated(cleandf),]
+
+str(cleandf)
+
+#Each row in df is a person involved in an accident. The selected columns in cleandf have the same values for all individuals in the same accident. ACCNUM (Accident Number) is an index for each accident.
+
+unique(cleandf$ROAD_CLASS)
+cleandf$ROAD_CLASS <- ifelse(cleandf$ROAD_CLASS == '', NA, cleandf$ROAD_CLASS)
+
+unique(cleandf$DISTRICT)
+cleandf$DISTRICT <- ifelse(cleandf$DISTRICT == '', NA, cleandf$DISTRICT)
+
+unique(cleandf$VISIBILITY)
+cleandf$VISIBILITY <- ifelse(cleandf$VISIBILITY == '', NA, cleandf$VISIBILITY )
+
+unique(cleandf$LIGHT)
+
+unique(cleandf$RDSFCOND)
+cleandf$RDSFCOND<- ifelse(cleandf$RDSFCOND== '', NA, cleandf$RDSFCOND)
+
+unique(cleandf$ACCLASS)
+cleandf$ACCLASS<- ifelse(cleandf$ACCLASS== '', NA, cleandf$ACCLASS)
+
+unique(cleandf$NEIGHBOURHOOD_158)
+
+#Every row has the same time in the date column. 4:00 or 5:00, however there is a time column with different values. I'm assuming the time is not accurate in the date column. 
+head(cleandf$DATE, 1000)
+
+#Verifying string length of date column, before trimming string
+uniquedatelen <- unique(nchar(cleandf$DATE))
+uniquedatelen
+
+cleandf$cleanDATE <- as.Date(substring(cleandf$DATE, 1, 10))
+head(cleandf$cleanDATE, 50)
+
+## Analysis and Visualization ##
+
+#Accidents Per Year
+accidentsperyear <- aggregate(cleandf, by=list(Year = format(cleandf$cleanDATE, '%Y')), FUN = length)
+accidentsperyear <- accidentsperyear[,c('Year', 'ACCNUM')] 
+names(accidentsperyear)[2] <- 'AccidentFrequency'
+plot(type = 'l', accidentsperyear$Year, accidentsperyear$AccidentFrequency, xlab = 'Year', ylab = 'Number of Accidents with Serious Injury')
+
+
+#Accidents Per Area of Toronto
+accidentsperdistrict <- aggregate(cleandf, by=list(cleandf$DISTRICT), FUN = length)
+names(accidentsperdistrict)[2] <- 'AccidentFrequency'
+names(accidentsperdistrict)[1] <- 'DISTRICT'
+accidentsperdistrict <- accidentsperdistrict[,c('DISTRICT', 'AccidentFrequency')] 
+pie(accidentsperdistrict$AccidentFrequency, paste(accidentsperdistrict$DISTRICT, ':', format(accidentsperdistrict$AccidentFrequency/sum(accidentsperdistrict$AccidentFrequency) * 100, digits = 2), '%'), main = 'Accidents by District in Toronto')
+
